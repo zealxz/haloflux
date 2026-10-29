@@ -34,7 +34,7 @@ header{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(5,minmax(0,
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px),
              radial-gradient(ellipse at 40% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
 .ov{position:absolute;font-size:9px;letter-spacing:1px;color:var(--text);pointer-events:none;z-index:2}
-.chk{left:0;top:0;will-change:transform;background:rgba(8,9,11,.85);border:1px solid var(--line2);padding:5px 8px;transition:opacity .4s}
+.chk{left:16px;top:14px;background:rgba(8,14,16,.82);border:1px solid rgba(120,235,210,.22);padding:6px 10px;transition:opacity .5s;pointer-events:none}
 .chk b{display:block;font-size:8px;color:var(--dim);font-weight:600;margin-bottom:3px}
 .chk span{font-size:12px;color:var(--white);font-weight:600;white-space:nowrap}
 .console{top:10px;right:14px;border:1px solid var(--line2);padding:3px 8px;background:rgba(8,9,11,.8)}
@@ -375,11 +375,8 @@ if (BAKED_MINE) PRESETS.MINE = { ...BASE, ...BAKED_MINE };
 const C = { ...(PRESETS.MINE || PRESETS.B) };
 const zf = z => 1 + (z - 1) * C.camZoom;
 
-const TOK = ['agent_runs', 'model_invocations', 'tool_runs', 'source_snapshots', 'claim_support_refs',
-  'agent_answer_versions', 'candidate_evidence', 'source_release_items', 'formal_business_object_versions',
-  'intake.parse()', 'dispatch()', 'capture()', 'bind()', 'publish()', 'commit()', 'audit.append()',
-  'source.run', 'claim.support', 'review.double', 'hash.match', 'schema.valid', 'gate.open',
-  'snapshot.4940', 'runs.4367', 'calls.2707', 'claims.376', 'answers.169']
+/* [removed] */
+
 
 /* ---------- rhythm: an uneven beat clock drives everything ---------- */
 const PATTERN = [0.5, 0.25, 0.25, 0.5, 0.5, 0.75, 0.25, 0.25, 0.25, 1.0];
@@ -824,7 +821,6 @@ function buildWeb() {
     b.strokeStyle = `rgba(235,238,244,${rr(0.35, 0.8)})`; b.lineWidth = 0.8;
     b.beginPath(); b.arc(px, py, s, 0, TAU); b.stroke();
     if (rnd() < 0.4) { b.beginPath(); b.arc(px + s * 2.2, py, s * 0.8, 0, TAU); b.stroke(); }
-    if (rnd() < 0.35) { b.fillStyle = 'rgba(200,204,212,.5)'; b.fillText('n' + ((rnd() * 99) | 0), px + 7, py); }
   }
   // dotted chains of small rings (as in the original)
   for (let k = 0; k < 3; k++) {
@@ -1257,22 +1253,15 @@ function buildCards() {
   Object.assign(rot, { from: 0, to: 0, t: 1, dur: 1, hold: 0 });
 }
 const TINTS = [[232, 234, 240], [232, 234, 240], [232, 234, 240], [232, 234, 240], [232, 234, 240], [232, 234, 240], [196, 184, 246], [196, 184, 246], [168, 222, 214], [206, 212, 150]];
-const HEAD = ['INTAKE', 'AGENT', 'MODEL', 'TOOL', 'SNAP', 'CLAIM', 'ANSWER', 'CAND', 'REL', 'FORMAL',
-  'source_snapshots', 'claim_support_refs', 'model_invocations', 'agent_runs', 'tool_runs',
-  'audit_events', 'outbox_messages', 'candidate_evidence', 'source_release_items', 'agent_answer_versions',
-  'joincare', 'CDE', 'openFDA', 'DailyMed', 'PubChem']
-const KEYS = ['tables', 'runs', 'calls', 'snapshots', 'claims', 'answers', 'events', 'sources',
-  'failed', 'succeeded', 'cancelled', 'queued', 'tokens', 'stages']
-const CODE_T = ['parse()', 'dispatch()', 'invoke()', 'execute()', 'capture()', 'bind()', 'render()',
-  'append()', 'publish()', 'commit()', 'audit.append', 'hash.match', 'schema.valid', 'double.review',
-  'snapshot', 'release', 'claim', 'evidence', 'gate', 'trace', 'version', 'seal', 'pin', 'verified']
+/* [removed] */
+
+/* [removed] */
+
+/* [removed] */
+
 const rgba = (t, a) => `rgba(${t[0]},${t[1]},${t[2]},${a})`;
-const fmtNum = () => {
-  // 从真实计数池中取值，保留平台量级
-  const pool = [620, 4367, 2707, 3401, 4940, 376, 169, 194, 325461, 325364, 4443, 2688, 1054, 612];
-  const v = pool[(rnd() * pool.length) | 0];
-  return v.toLocaleString('en-US');
-};
+/* [removed] */
+;
 function glyphStrips(x, x1, y0, y1, pitch, opt, ctx) {
   const tint = opt.tint;
   for (let lx = x; lx < x1 - 1; lx += pitch) {
@@ -1289,122 +1278,23 @@ function glyphStrips(x, x1, y0, y1, pitch, opt, ctx) {
   }
 }
 // ---- block renderers: (ctx, x0, x1, y0, y1, tint) — x is radial, y is tangential ----
-function header(c, x0, x1, y, t) {
-  c.font = `700 4.3px ${FONT}`; c.fillStyle = rgba(t, 0.95); c.fillText(pick(HEAD), x0, y);
-  c.fillStyle = rgba(t, 0.55); c.fillText(String((rnd() * 99) | 0).padStart(2, '0'), x1 - 6, y);
-  c.fillStyle = rgba(t, 0.3); c.fillRect(x0, y + 5.6, x1 - x0, 0.45);
-  return y + 7.5;
-}
-const BLOCKS = {
-  code(c, x0, x1, y0, y1, t) {
-    let y = header(c, x0, x1, y0, t);
-    c.font = `500 3.5px ${FONT}`;
-    let n = 1 + (rnd() * 40 | 0);
-    while (y < y1 - 3.5) {
-      c.fillStyle = rgba(t, 0.3); c.fillText(String(n++).padStart(3, '0'), x0, y);
-      let xx = x0 + 9;
-      const words = 1 + (rnd() * 4 | 0);
-      for (let i = 0; i < words && xx < x1 - 4; i++) {
-        const w = pick(CODE_T); c.fillStyle = rgba(t, rnd() < 0.25 ? 1 : rr(0.5, 0.8)); c.fillText(w, xx, y); xx += w.length * 2.15 + 2;
-      }
-      y += 4.6;
-    }
-  },
-  kv(c, x0, x1, y0, y1, t) {
-    let y = y1 - y0 > 18 ? header(c, x0, x1, y0, t) : y0 + 1;
-    c.font = `500 3.6px ${FONT}`;
-    while (y < y1 - 4) {
-      c.fillStyle = rgba(t, 0.5); c.fillText(pick(KEYS), x0, y);
-      const v = fmtNum(); c.fillStyle = rgba(t, 0.95); c.textAlign = 'right'; c.fillText(v, x1, y); c.textAlign = 'left';
-      const bx = x0 + 14, bw = Math.max(0, x1 - x0 - 14 - v.length * 2.2 - 4);
-      c.fillStyle = rgba(t, 0.15); c.fillRect(bx, y + 1.2, bw, 1.2);
-      c.fillStyle = rgba(t, 0.7); c.fillRect(bx, y + 1.2, bw * rnd(), 1.2);
-      y += 5.2;
-    }
-  },
-  spark(c, x0, x1, y0, y1, t) {
-    const y = header(c, x0, x1, y0, t), top = y + 1, bot = y1 - 2, n = 40;
-    c.fillStyle = rgba(t, 0.18); c.fillRect(x0, bot, x1 - x0, 0.4); c.fillRect(x0, (top + bot) / 2, x1 - x0, 0.25);
-    c.strokeStyle = rgba(t, 0.95); c.lineWidth = 0.55; c.beginPath();
-    let v = rnd(), lx = 0, ly = 0;
-    for (let i = 0; i <= n; i++) {
-      v = clamp(v + gauss() * 0.22, 0, 1);
-      lx = x0 + (x1 - x0) * i / n; ly = bot - v * (bot - top);
-      i ? c.lineTo(lx, ly) : c.moveTo(lx, ly);
-    }
-    c.stroke(); c.fillStyle = '#fff'; c.fillRect(lx - 0.9, ly - 0.9, 1.8, 1.8);
-  },
-  bars(c, x0, x1, y0, y1, t) {
-    const y = header(c, x0, x1, y0, t), n = 6 + (rnd() * 10 | 0), bh = (y1 - y - 1) / n;
-    c.font = `500 3px ${FONT}`;
-    for (let i = 0; i < n; i++) {
-      const v = rr(0.1, 1), yy = y + i * bh;
-      c.fillStyle = rgba(t, 0.35); c.fillText(String(i).padStart(2, '0'), x0, yy);
-      c.fillStyle = rgba(t, v > 0.85 ? 1 : 0.65); c.fillRect(x0 + 7, yy + 0.4, (x1 - x0 - 7) * v, Math.max(0.8, bh - 1.2));
-    }
-  },
-  prog(c, x0, x1, y0, y1, t) {
-    let y = y1 - y0 > 18 ? header(c, x0, x1, y0, t) : y0 + 1;
-    c.font = `500 3.4px ${FONT}`;
-    while (y < y1 - 5) {
-      const p = rnd();
-      c.fillStyle = rgba(t, 0.55); c.fillText(pick(['read', 'build', 'review', 'qa', 'sync', 'diff']), x0, y);
-      c.fillStyle = rgba(t, 0.9); c.textAlign = 'right'; c.fillText((p * 100 | 0) + '%', x1, y); c.textAlign = 'left';
-      const bx = x0 + 15, bw = x1 - x0 - 26, segs = 12;
-      for (let i = 0; i < segs; i++) { c.fillStyle = rgba(t, i / segs < p ? 0.85 : 0.14); c.fillRect(bx + i * bw / segs, y + 0.6, bw / segs - 0.6, 2); }
-      y += 5.4;
-    }
-  },
-  grid(c, x0, x1, y0, y1, t) {
-    const y = y1 - y0 > 20 ? header(c, x0, x1, y0, t) : y0 + 1, p = rr(2.4, 3.2);
-    for (let yy = y; yy < y1 - p + 0.5; yy += p) for (let xx = x0; xx < x1 - p + 0.5; xx += p) {
-      const v = rnd();
-      c.fillStyle = v > 0.93 ? 'rgba(240,166,198,.95)' : rgba(t, 0.08 + v * v * 0.8);
-      c.fillRect(xx, yy, p - 0.6, p - 0.6);
-    }
-  },
-  gauge(c, x0, x1, y0, y1, t) {
-    const r = Math.min((y1 - y0) / 2 - 1.5, 9), gx = x0 + r + 1, gy = (y0 + y1) / 2, v = rnd();
-    c.lineWidth = 1.2; c.strokeStyle = rgba(t, 0.15); c.beginPath(); c.arc(gx, gy, r, 0, TAU); c.stroke();
-    c.strokeStyle = rgba(t, 0.95); c.beginPath(); c.arc(gx, gy, r, -Math.PI / 2, -Math.PI / 2 + TAU * v); c.stroke();
-    c.font = `700 ${Math.max(3.2, r * 0.55)}px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = rgba(t, 1); c.fillText((v * 100 | 0) + '', gx, gy); c.textAlign = 'left'; c.textBaseline = 'top';
-    if (x1 - (gx + r) > 20) BLOCKS.kv(c, gx + r + 4, x1, y0, y1, t);
-  },
-  wave(c, x0, x1, y0, y1, t) {
-    const y = header(c, x0, x1, y0, t), mid = (y + y1) / 2, amp = (y1 - y) * 0.38, f1 = rr(0.15, 0.4), f2 = rr(0.5, 1.2), ph = rnd() * 6;
-    [[0.95, 1], [0.4, -0.6]].forEach(([a, k]) => {
-      c.strokeStyle = rgba(t, a); c.lineWidth = 0.5; c.beginPath();
-      for (let xx = x0; xx <= x1; xx += 0.8) { const yy = mid + amp * k * (Math.sin(xx * f1 + ph) * 0.7 + Math.sin(xx * f2) * 0.3); xx === x0 ? c.moveTo(xx, yy) : c.lineTo(xx, yy); }
-      c.stroke();
-    });
-  },
-  para(c, x0, x1, y0, y1, t) { glyphStrips(x0, x1, y0, y1, rr(2.6, 3.4), { tint: t, ragged: true, th: 1.3 }, c); },
-  cols(c, x0, x1, y0, y1, t) { glyphStrips(x0, x1, y0, y1, rr(3.6, 4.6), { tint: t, colGap: true, th: 1.5 }, c); },
-  barcode(c, x0, x1, y0, y1, t) { glyphStrips(x0, x1, y0, y1, rr(3.2, 4.2), { tint: t, solid: true, th: 1.8 }, c); },
-  matrix(c, x0, x1, y0, y1, t) {
-    const p = rr(2.1, 2.6), dens = rr(0.35, 0.65);
-    for (let yy = y0; yy < y1 - 1; yy += p) for (let xx = x0; xx < x1; xx += p)
-      if (rnd() < dens) { c.fillStyle = rgba(t, rr(0.5, 1)); c.fillRect(xx, yy, 1.4, 1.4); }
-  },
-};
-const BLOCK_W = [['code', 16], ['kv', 11], ['spark', 9], ['bars', 8], ['prog', 7], ['grid', 7], ['gauge', 3], ['wave', 4],
-  ['para', 12], ['cols', 7], ['barcode', 6], ['matrix', 8]];
-const NEEDS_H = { code: 18, spark: 18, bars: 20, wave: 18, gauge: 16 };
+/* [removed header] */
+
+/* [removed: seeded placeholder generator] */
+
+/* [removed] */
+;
+/* [removed] */
+;
 // 按真实数据密度选择块型：
 //   高密度阶段（snapshots / runs）→ 条形、波形等"数据堆积"型
 //   低密度阶段（candidate / release 只有 1 条）→ 稀疏段落型
-const DENSE_BLOCKS = ['bars', 'spark', 'wave', 'code', 'grid'];
-const SPARSE_BLOCKS = ['para', 'kv', 'cols', 'barcode'];
-function pickBlock(h, rel) {
-  const pool = (rel != null && rel < 0.45) ? SPARSE_BLOCKS : DENSE_BLOCKS;
-  // 高度不足时排除长块型
-  for (let tries = 0; tries < 10; tries++) {
-    const name = pool[(rnd() * pool.length) | 0];
-    if (!NEEDS_H[name] || h >= NEEDS_H[name]) return name;
-  }
-  return rel != null && rel < 0.45 ? 'para' : 'bars';
-}
+/* [removed] */
+;
+/* [removed] */
+;
+/* [removed pickBlock] */
+
 // renderSlot 已移除：环带改为业务阶段扇区，不再生成随机数据块
 
 function rimW() { return Math.max(3, (RO - R) * 0.065 * C.rimWidth); }
@@ -1636,25 +1526,20 @@ function drawStage(dt) {
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${Math.min(1, 0.75 * C.vignette)})`);
     S.fillStyle = vg; S.fillRect(0, 0, W, H);
   }
-
-  drawCallout();
 }
 
 /* ---------- callout box with leader line (follows the camera) ---------- */
-const CHECKS = [['STABILITY CHECK', 'CFL = |u| Δt / Δx'], ['MASS CONSERVATION', 'Σ ρ dV = const'], ['RESIDUAL NORM', 'r = ‖b − A·u‖₂'],
-  ['BOUNDARY', 'u · n = 0  on ∂Ω'], ['PROJECTION', '∇²p = ∇ · u* / Δt']];
+// 平台真实指标，不再轮播无关公式
+const CHECKS = [
+  ['RUNS', '4,367 · 成功 2,688'],
+  ['MODEL CALLS', '2,707 · 成功 2,659'],
+  ['SNAPSHOTS', '4,940 · 库内'],
+  ['CLAIMS', '376 · 已绑定'],
+  ['EVENTS 24H', '4,443 · 已审计']
+];
 let chkI = 0;
 const chkEl = document.getElementById('chk');
-function drawCallout() {
-  const a = -thS * 0.32;
-  const anchor = toScreen(cx + Math.cos(a) * (RO + 30), cy + Math.sin(a) * (RO + 30));
-  const box = toScreen(cx + Math.cos(a) * (RO + 30) + 120, cy + Math.sin(a) * (RO + 30) - 40);
-  const bx = Math.min(W - 190, Math.max(8, box.x)), by = Math.min(H - 60, Math.max(40, box.y));
-  chkEl.style.transform = `translate(${bx}px,${by}px)`;
-  S.strokeStyle = 'rgba(230,233,238,.55)'; S.lineWidth = 0.8;
-  S.beginPath(); S.moveTo(anchor.x, anchor.y); S.lineTo(bx, by + 12); S.stroke();
-  S.fillStyle = '#fff'; S.fillRect(anchor.x - 1.5, anchor.y - 1.5, 3, 3);
-}
+/* [removed drawCallout] */
 setInterval(() => {
   chkEl.style.opacity = 0;
   setTimeout(() => {
