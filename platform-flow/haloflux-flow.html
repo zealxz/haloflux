@@ -1101,10 +1101,24 @@ function updateRing(dt) {
 function buildCards() {
   slots = [];
   const band = RO - R, mid = R + band * 0.42;
+  // 每个角度先算出它属于哪个真实阶段，再用该阶段的量级决定卡片厚度与间隙
+  const n = PFDATA.stages.length;
+  const maxN = Math.max.apply(null, PFDATA.stages.map(function (s) { return s.n; }));
+  const lgMax = Math.log(maxN + 1);
   let a = 0;
   while (a < TAU - 0.03) {
-    const hpx = rr(16, 62), da = hpx / mid, gap = rr(3, 9) / mid;
-    slots.push({ a: a + da / 2, da, hpx, c: null, flash: 0 });
+    // 角度 -> 阶段索引（与 drawFlowArc 的分段一致，从 -90° 起）
+    let ang = a - Math.PI / 2;
+    while (ang < 0) ang += TAU;
+    while (ang >= TAU) ang -= TAU;
+    const si = Math.floor(ang / (TAU / n)) % n;
+    const st = PFDATA.stages[si];
+    // 量级越大 → 卡片越厚、间隙越小（信息密度高）
+    const rel = Math.log(st.n + 1) / lgMax;          // 0..1
+    const hpx = 14 + 52 * rel + rr(-3, 3);            // 14..66 px
+    const gapPx = 11 - 7 * rel + rr(-1.5, 1.5);       // 4..11 px
+    const da = hpx / mid, gap = Math.max(1.5, gapPx) / mid;
+    slots.push({ a: a + da / 2, da, hpx, c: null, flash: 0, stage: si, rel: rel });
     a += da + gap;
   }
   Object.assign(rot, { from: 0, to: 0, t: 1, dur: 1, hold: 0 });
@@ -1244,13 +1258,19 @@ const BLOCKS = {
 const BLOCK_W = [['code', 16], ['kv', 11], ['spark', 9], ['bars', 8], ['prog', 7], ['grid', 7], ['gauge', 3], ['wave', 4],
   ['para', 12], ['cols', 7], ['barcode', 6], ['matrix', 8]];
 const NEEDS_H = { code: 18, spark: 18, bars: 20, wave: 18, gauge: 16 };
-function pickBlock(h) {
-  for (let tries = 0; tries < 8; tries++) {
-    let r = rnd() * 100, name = 'para';
-    for (const [n, w] of BLOCK_W) { r -= w; if (r <= 0) { name = n; break; } }
+// 按真实数据密度选择块型：
+//   高密度阶段（snapshots / runs）→ 条形、波形等"数据堆积"型
+//   低密度阶段（candidate / release 只有 1 条）→ 稀疏段落型
+const DENSE_BLOCKS = ['bars', 'spark', 'wave', 'code', 'grid'];
+const SPARSE_BLOCKS = ['para', 'kv', 'cols', 'barcode'];
+function pickBlock(h, rel) {
+  const pool = (rel != null && rel < 0.45) ? SPARSE_BLOCKS : DENSE_BLOCKS;
+  // 高度不足时排除长块型
+  for (let tries = 0; tries < 10; tries++) {
+    const name = pool[(rnd() * pool.length) | 0];
     if (!NEEDS_H[name] || h >= NEEDS_H[name]) return name;
   }
-  return pick(['para', 'kv', 'matrix', 'barcode']);
+  return rel != null && rel < 0.45 ? 'para' : 'bars';
 }
 function renderSlot(s) {
   const band = RO - R, h = s.hpx;
@@ -1265,7 +1285,7 @@ function renderSlot(s) {
   for (const [b0, b1] of blocks) {
     const tint = pick(TINTS), y0 = 1 + rr(0, 2), y1 = h + 1 - rr(0, 2);
     x.save(); x.beginPath(); x.rect(b0, y0 - 0.5, b1 - b0, y1 - y0 + 1); x.clip();
-    BLOCKS[pickBlock(y1 - y0)](x, b0, b1, y0, y1, tint);
+    BLOCKS[pickBlock(y1 - y0, s.rel)](x, b0, b1, y0, y1, tint);
     x.restore();
   }
   // outer index column: tiny ids + tick groups
