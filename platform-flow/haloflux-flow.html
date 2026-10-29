@@ -340,10 +340,11 @@ if (BAKED_MINE) PRESETS.MINE = { ...BASE, ...BAKED_MINE };
 const C = { ...(PRESETS.MINE || PRESETS.B) };
 const zf = z => 1 + (z - 1) * C.camZoom;
 
-const TOK = ['load_collection()', 'extract_eq', '∂u/∂t', 'rho', 'grad(p)', 'dt=1e-3', 'assert', 'residual', 'solve()',
-  'mesh', 'bc.apply', 'flux', 'CFL', '0.0041', 'ok', 'PASS', 'ref#12', 'scene_07', 'u_star', 'div(u)', 'proj', 'advect',
-  'step++', 'tol', '1.2e-6', 'kernel', 'paper[37]', 'eq.(4)', 'fig.3', 'table2', 'nu=0.01', 'v_x', 'omega', 'bounce',
-  'f_eq', 'stream', 'collide', 'Re=100', 'check', '>>>', 'match', 'diff', 'L2', 'grid64', 'cfg', 'seed=7'];
+const TOK = ['agent_runs', 'model_invocations', 'tool_runs', 'source_snapshots', 'claim_support_refs',
+  'agent_answer_versions', 'candidate_evidence', 'source_release_items', 'formal_business_object_versions',
+  'intake.parse()', 'dispatch()', 'capture()', 'bind()', 'publish()', 'commit()', 'audit.append()',
+  'source.run', 'claim.support', 'review.double', 'hash.match', 'schema.valid', 'gate.open',
+  'snapshot.4940', 'runs.4367', 'calls.2707', 'claims.376', 'answers.169']
 
 /* ---------- rhythm: an uneven beat clock drives everything ---------- */
 const PATTERN = [0.5, 0.25, 0.25, 0.5, 0.5, 0.75, 0.25, 0.25, 0.25, 1.0];
@@ -573,30 +574,34 @@ function drawLens() {
   const cxL = Math.max(r + 2, Math.min(W - r - 2, IX.hx));
   const cyL = Math.max(r + 2, Math.min(H - r - 2, IX.hy));
 
+  // 镜内：直接按放大倍率重绘环带面板（用高分辨率源图，不靠拉伸）
   S.save();
   S.setTransform(1, 0, 0, 1, 0, 0);
   S.beginPath(); S.arc(cxL * DPR, cyL * DPR, r * DPR, 0, TAU); S.clip();
-  S.fillStyle = '#040608';
+  S.fillStyle = '#05080a';
   S.fillRect((cxL - r) * DPR, (cyL - r) * DPR, 2 * r * DPR, 2 * r * DPR);
-  const sw = (2 * r / z) * DPR;
-  S.imageSmoothingEnabled = true;
-  S.drawImage(
-    IX.snap,
-    (IX.hx - r / z) * DPR, (IX.hy - r / z) * DPR, sw, sw,
-    (cxL - r) * DPR, (cyL - r) * DPR, 2 * r * DPR, 2 * r * DPR
-  );
+
+  // 以指针为镜心，把环带局部按 z 倍重绘
+  S.translate(cxL * DPR, cyL * DPR);
+  S.scale(DPR * z, DPR * z);
+  S.translate(-IX.hx, -IX.hy);
+  // 用相机变换重画场景（保持与主视图一致的世界坐标）
+  camT(S, 1);
+  try { drawRing(0); } catch (e) {}
   S.restore();
 
+  // 镜框与标签
   S.save();
   S.setTransform(1, 0, 0, 1, 0, 0);
   S.beginPath(); S.arc(cxL * DPR, cyL * DPR, r * DPR, 0, TAU);
-  S.strokeStyle = 'rgba(94,234,212,0.85)'; S.lineWidth = 1.6 * DPR; S.stroke();
-  S.beginPath(); S.arc(cxL * DPR, cyL * DPR, (r + 5) * DPR, 0, TAU);
-  S.strokeStyle = 'rgba(94,234,212,0.14)'; S.lineWidth = 7 * DPR; S.stroke();
-  S.font = '700 ' + (7.5 * DPR) + 'px ' + FONT;
-  S.fillStyle = 'rgba(94,234,212,0.9)';
+  S.strokeStyle = 'rgba(94,234,212,0.9)'; S.lineWidth = 1.8 * DPR; S.stroke();
+  S.beginPath(); S.arc(cxL * DPR, cyL * DPR, (r + 6) * DPR, 0, TAU);
+  S.strokeStyle = 'rgba(94,234,212,0.16)'; S.lineWidth = 8 * DPR; S.stroke();
+
+  S.font = '700 ' + (8 * DPR) + 'px ' + FONT;
+  S.fillStyle = 'rgba(94,234,212,0.95)';
   S.textAlign = 'center';
-  S.fillText('PAUSED \u00b7 ' + z.toFixed(1) + '\u00d7', cxL * DPR, (cyL + r - 11) * DPR);
+  S.fillText('PAUSED \u00b7 ' + z.toFixed(1) + '\u00d7 LIVE', cxL * DPR, (cyL + r - 12) * DPR);
   S.textAlign = 'left';
   S.restore();
 }
@@ -1066,7 +1071,7 @@ function drawBokeh(dt) {
   S.globalAlpha = 1; S.globalCompositeOperation = 'source-over';
 }
 /* ---------- ring: pre-rendered dot-matrix data blocks on a black band ---------- */
-const RING_SC = 2.4;
+const RING_SC = 5.0;   // 提高离屏倍率：放大镜需要真实细节，而非拉伸像素
 let slots = [];
 const easeOX = t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
 const rot = { from: 0, to: 0, t: 1, dur: 1, hold: 0, ease: easeIO };
@@ -1105,13 +1110,22 @@ function buildCards() {
   Object.assign(rot, { from: 0, to: 0, t: 1, dur: 1, hold: 0 });
 }
 const TINTS = [[232, 234, 240], [232, 234, 240], [232, 234, 240], [232, 234, 240], [232, 234, 240], [232, 234, 240], [196, 184, 246], [196, 184, 246], [168, 222, 214], [206, 212, 150]];
-const HEAD = ['SOLVER/02', 'EXTRACT', 'REF.SCENE 07', 'METHOD M04', 'CHECK', 'RESIDUAL', 'PAPER 37', 'AGENT 09', 'BUFFER A',
-  'DIFF FIELD', 'STEP 1284', 'MESH 64x64', 'PROJECT', 'ADVECT', 'BC / WALL', 'LBM D2Q9', 'QUEUE', 'TRACE', 'EQ.(4)', 'FIG.3', 'VALIDATE', 'SCENE 12'];
-const KEYS = ['dt', 'CFL', 'nu', 'Re', 'tol', 'iter', 'L2', 'mass', 'div', 'u_max', 'rho', 'err', 'grid', 'seed'];
-const CODE_T = ['load()', 'step(u)', 'proj(p)', 'bc.apply', 'solve()', 'grad p', 'div u', 'assert', 'f_eq', 'stream', 'collide', 'ok', 'PASS',
-  'ref#12', 'diff', 'L2<tol', 'u*', '->', '==', 'dt/2', 'emit', 'push', 'read', 'fig3', 'eq4'];
+const HEAD = ['INTAKE', 'AGENT', 'MODEL', 'TOOL', 'SNAP', 'CLAIM', 'ANSWER', 'CAND', 'REL', 'FORMAL',
+  'source_snapshots', 'claim_support_refs', 'model_invocations', 'agent_runs', 'tool_runs',
+  'audit_events', 'outbox_messages', 'candidate_evidence', 'source_release_items', 'agent_answer_versions',
+  'joincare', 'CDE', 'openFDA', 'DailyMed', 'PubChem']
+const KEYS = ['tables', 'runs', 'calls', 'snapshots', 'claims', 'answers', 'events', 'sources',
+  'failed', 'succeeded', 'cancelled', 'queued', 'tokens', 'stages']
+const CODE_T = ['parse()', 'dispatch()', 'invoke()', 'execute()', 'capture()', 'bind()', 'render()',
+  'append()', 'publish()', 'commit()', 'audit.append', 'hash.match', 'schema.valid', 'double.review',
+  'snapshot', 'release', 'claim', 'evidence', 'gate', 'trace', 'version', 'seal', 'pin', 'verified']
 const rgba = (t, a) => `rgba(${t[0]},${t[1]},${t[2]},${a})`;
-const fmtNum = () => { const k = rnd(); return k < 0.3 ? rr(0, 1).toFixed(3) : k < 0.55 ? (rr(1, 9).toFixed(1) + 'e-' + (2 + (rnd() * 5 | 0))) : k < 0.8 ? String((rnd() * 9999) | 0) : rr(0, 100).toFixed(1); };
+const fmtNum = () => {
+  // 从真实计数池中取值，保留平台量级
+  const pool = [620, 4367, 2707, 3401, 4940, 376, 169, 194, 325461, 325364, 4443, 2688, 1054, 612];
+  const v = pool[(rnd() * pool.length) | 0];
+  return v.toLocaleString('en-US');
+};
 function glyphStrips(x, x1, y0, y1, pitch, opt, ctx) {
   const tint = opt.tint;
   for (let lx = x; lx < x1 - 1; lx += pitch) {
