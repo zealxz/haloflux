@@ -133,6 +133,35 @@ header{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(5,minmax(0,
 .feed{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;font-size:8px;overflow:hidden}
 .feed div{white-space:nowrap;color:#7f918c;overflow:hidden;text-overflow:ellipsis}
 .feed div:last-child{color:#eef4f2;font-weight:600}
+
+/* ---------- 环上阶段标签（DOM 渲染，文字永远清晰） ---------- */
+.ring-labels{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.rl-item{position:absolute;transform-origin:0 0;white-space:nowrap;
+  font-family:"JetBrains Mono",Consolas,monospace;line-height:1;will-change:transform,opacity}
+.rl-item .code{font-weight:800;font-size:10px;letter-spacing:.5px;color:rgba(222,236,231,.9)}
+.rl-item .num{font-weight:800;font-size:13px;color:#eef6f3;margin-top:2px}
+.rl-item.active .code{color:#8cf5cf}
+.rl-item.active .num{color:#fff}
+.rl-item.near .code{color:#c8ded7}
+
+/* ---------- 阶段说明卡（DOM） ---------- */
+.stage-card{position:absolute;right:18px;top:50%;transform:translateY(-50%);
+  width:min(430px,32vw);background:rgba(7,13,15,.95);border:1px solid rgba(120,235,210,.5);
+  border-radius:5px;padding:0;display:none;pointer-events:none;z-index:3;
+  box-shadow:0 12px 40px rgba(0,0,0,.55);overflow:hidden}
+.stage-card.show{display:block}
+.stage-card .bar{height:3px;background:rgba(120,235,210,.85)}
+.stage-card .pad{padding:14px 16px 16px}
+.stage-card .step{font:800 9px "JetBrains Mono",Consolas,monospace;letter-spacing:.6px;
+  color:rgba(120,235,210,.65);margin-bottom:7px}
+.stage-card .title{font:800 19px "JetBrains Mono",Consolas,monospace;color:#effaf6;margin-bottom:7px}
+.stage-card .meta{font:600 10px "JetBrains Mono",Consolas,monospace;color:rgba(150,185,175,.82);
+  margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid rgba(120,235,210,.16)}
+.stage-card .desc{font:500 11.5px/1.65 "JetBrains Mono",Consolas,monospace;
+  color:rgba(214,232,226,.94);margin-bottom:12px}
+.stage-card .io{display:grid;grid-template-columns:34px 1fr;gap:5px 8px;align-items:center}
+.stage-card .io .k{font:700 9.5px "JetBrains Mono",Consolas,monospace;color:rgba(120,235,210,.7)}
+.stage-card .io .v{font:600 11px "JetBrains Mono",Consolas,monospace;color:rgba(232,244,240,.92)}
 </style>
 </head>
 <body>
@@ -148,6 +177,8 @@ header{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(5,minmax(0,
 
   <div class="stage" id="stageWrap">
     <canvas id="stage"></canvas>
+    <div class="ring-labels" id="ringLabels"></div>
+    <div class="stage-card" id="stageCard"></div>
     <div class="ov chk" id="chk"><b id="chkK">SNAPSHOT</b><span id="chkV">2026-10-29 10:22</span></div>
     <div class="ov status"><div class="big" id="stBig">4,367 RUNS · 2,688 SUCCEEDED</div><div class="sm">24.1% failed · 4,443 events / 24h</div></div>
   </div>
@@ -647,98 +678,74 @@ function ixSnapshot() {
   g.drawImage(stage, 0, 0);
 }
 
-function drawLens() {
-  const active = ptr.lockedStage >= 0 ? ptr.lockedStage : ptr.hoverStage;
-  if (active < 0) return;
-  const st = PFDATA.stages[active];
 
-  // 说明卡：右侧浮层，宽度自适应，避免遮挡环的核心区
-  const cardW = Math.min(460, W * 0.33);
-  const lines = [];
-  S.save();
-  S.setTransform(DPR, 0, 0, DPR, 0, 0);
-  S.globalAlpha = 1;
-  S.globalCompositeOperation = 'source-over';
+/* =========================================================
+   DOM 渲染层：环上阶段标签 + 阶段说明卡
+   文字由浏览器排版，不再受 canvas 旋转变换与字体回退影响
+   ========================================================= */
+const ringLabelEl = document.getElementById('ringLabels');
+const stageCardEl = document.getElementById('stageCard');
+let rlNodes = [];
 
-  // 先量算说明文字需要几行
-  const pad = 16;
-  const tw = cardW - pad * 2;
-  S.font = '500 11.5px ' + FONT;
-  {
-    let line = '';
-    for (const ch of st.biz) {
-      const test = line + ch;
-      if (S.measureText(test).width > tw) { lines.push(line); line = ch; }
-      else line = test;
-    }
-    if (line) lines.push(line);
+function buildRingLabels() {
+  ringLabelEl.innerHTML = '';
+  rlNodes = [];
+  for (let i = 0; i < PFDATA.stages.length; i++) {
+    const st = PFDATA.stages[i];
+    const d = document.createElement('div');
+    d.className = 'rl-item';
+    d.innerHTML = '<div class="code">' + st.code + '</div>' +
+                  '<div class="num">' + st.n.toLocaleString('en-US') + '</div>';
+    ringLabelEl.appendChild(d);
+    rlNodes.push(d);
   }
-
-  const cardH = 148 + lines.length * 16;
-  const cardX = W - cardW - 16;
-  const cardY = Math.max(16, (H - cardH) / 2);
-
-  // 卡片
-  S.fillStyle = 'rgba(7,13,15,0.95)';
-  S.strokeStyle = 'rgba(120,235,210,0.5)';
-  S.lineWidth = 1.1;
-  S.beginPath(); S.roundRect(cardX, cardY, cardW, cardH, 5); S.fill(); S.stroke();
-  S.fillStyle = 'rgba(120,235,210,0.85)';
-  S.fillRect(cardX, cardY, 3, cardH);
-
-  let y = cardY + 14;
-  S.textAlign = 'left'; S.textBaseline = 'top';
-
-  // 步骤序号
-  S.font = '800 9.5px ' + FONT;
-  S.fillStyle = 'rgba(120,235,210,0.65)';
-  S.fillText('STEP ' + (active + 1) + ' / ' + PFDATA.stages.length + '   ' + st.code, cardX + pad, y);
-  y += 15;
-
-  // 标题
-  S.font = '800 19px ' + FONT;
-  S.fillStyle = '#effaf6';
-  S.fillText(st.name, cardX + pad, y);
-  y += 22;
-
-  // 计数
-  S.font = '600 10px ' + FONT;
-  S.fillStyle = 'rgba(150,185,175,0.8)';
-  S.fillText(st.n.toLocaleString('en-US') + ' 条记录  ·  ' + st.table, cardX + pad, y);
-  y += 16;
-
-  // 分隔
-  S.strokeStyle = 'rgba(120,235,210,0.16)'; S.lineWidth = 0.8;
-  S.beginPath(); S.moveTo(cardX + pad, y); S.lineTo(cardX + cardW - pad, y); S.stroke();
-  y += 11;
-
-  // 业务说明
-  S.font = '500 10px ' + FONT;
-  S.fillStyle = 'rgba(214,232,226,0.94)';
-  for (let i = 0; i < lines.length; i++) {
-    S.fillText(lines[i], cardX + pad, y);
-    y += 16;
-  }
-  y += 6;
-
-  // 输入 → 输出
-  S.font = '700 9.5px ' + FONT;
-  S.fillStyle = 'rgba(120,235,210,0.75)';
-  S.fillText('输入', cardX + pad, y);
-  S.fillStyle = 'rgba(232,244,240,0.9)';
-  S.font = '600 11px ' + FONT;
-  S.fillText(st.from, cardX + pad + 30, y - 1);
-  y += 15;
-  S.font = '700 9.5px ' + FONT;
-  S.fillStyle = 'rgba(120,235,210,0.75)';
-  S.fillText('输出', cardX + pad, y);
-  S.fillStyle = 'rgba(232,244,240,0.9)';
-  S.font = '600 9.5px ' + FONT;
-  S.font = '600 11px ' + FONT;
-  S.fillText(st.to, cardX + pad + 32, y - 1);
-
-  S.restore();
 }
+
+// 每帧：把每个标签投影到环上对应位置
+function positionRingLabels() {
+  // 首次调用时构建 UI（此时 slots 已就绪）
+  if (rlNodes.length !== slots.length) buildRingLabels();
+  const band = RO - R;
+  const mid = R + band * 0.5;
+  const active = ptr.lockedStage >= 0 ? ptr.lockedStage : ptr.hoverStage;
+  for (let i = 0; i < rlNodes.length; i++) {
+    const s = slots[i];
+    if (!s) continue;
+    const node = rlNodes[i];
+    const ang = s.a + ringRot;
+    const norm = Math.atan2(Math.sin(ang), Math.cos(ang));
+    const isA = i === active;
+
+    // 整环可见：全部标签都显示，仅按距离中心衰减透明度
+    node.style.opacity = isA ? '1' : String(0.55 + 0.4 * (1 - Math.abs(norm) / Math.PI));
+
+    const sx = cx + Math.cos(ang) * mid;
+    const sy = cy + Math.sin(ang) * mid;
+    // 换算成画布内的 CSS 像素（canvas 与容器同尺寸）
+    const px = sx, py = sy;
+
+    node.className = 'rl-item' + (isA ? ' active' : '');
+    node.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px) translate(-50%,-50%)';
+  }
+}
+
+function renderStageCard() {
+  const active = ptr.lockedStage >= 0 ? ptr.lockedStage : ptr.hoverStage;
+  if (active < 0) { stageCardEl.className = 'stage-card'; return; }
+  const st = PFDATA.stages[active];
+  stageCardEl.className = 'stage-card show';
+  stageCardEl.innerHTML =
+    '<div class="bar"></div><div class="pad">' +
+    '<div class="step">STEP ' + (active + 1) + ' / ' + PFDATA.stages.length + '  ' + st.code + '</div>' +
+    '<div class="title">' + st.name + '</div>' +
+    '<div class="meta">' + st.n.toLocaleString('en-US') + ' 条记录 · ' + st.table + '</div>' +
+    '<div class="desc">' + st.biz + '</div>' +
+    '<div class="io">' +
+      '<div class="k">输入</div><div class="v">' + st.from + '</div>' +
+      '<div class="k">输出</div><div class="v">' + st.to + '</div>' +
+    '</div></div>';
+}
+
 
 function drawPauseBadge() {
   // 锁定提示：告知用户当前固定在哪个阶段、如何解除
@@ -763,16 +770,21 @@ function drawPauseBadge() {
 
 
 function resizeStage() {
+  // 尺寸变化后重建 DOM 标签（位置由 positionRingLabels 每帧更新）
+  setTimeout(function () { if (typeof buildRingLabels === 'function') buildRingLabels(); }, 0);
   const r = stage.getBoundingClientRect();
   W = r.width; H = r.height;
   stage.width = W * DPR; stage.height = H * DPR;
-  // 原版构图：圆心偏左、半径大于画布，只露出圆盘的一段弧
-  cx = W * 0.07; cy = H * 0.5;
-  R = Math.max(H * 0.78, W * 0.30);
-  RO = R + Math.max(90, Math.min(240, H * 0.3, W * 0.13)) * C.ringWidth;
+  // 整环可见：圆心在左侧 1/3 处（给右侧说明卡留空间），半径贴合画布高度
+  const cardW = Math.min(430, W * 0.32);
+  const availW = W - cardW - 60;          // 可用于环的横向空间
+  cx = Math.min(availW * 0.5, H * 0.72);
+  cy = H * 0.5;
+  R = Math.min(H * 0.30, availW * 0.30);
+  RO = R + Math.max(22, R * 0.22) * C.ringWidth;
   RMAX = Math.hypot(W - cx, H / 2) + 60;
-  thV = Math.asin(Math.min(1, (H / 2 + 60) / R));
-  thS = Math.asin(Math.min(1, (H / 2 + 40) / RO));
+  thV = Math.asin(Math.min(1, (H / 2 + 40) / R));
+  thS = Math.asin(Math.min(1, (H / 2 + 30) / RO));
   buildWeb(); buildLanes(); buildCards(); buildOuter();
   trailC = mkd(2 * R + 4, 2 * R + 4, Math.min(DPR, 1.5));
   farC = document.createElement('canvas'); farC.width = Math.ceil(W * FS); farC.height = Math.ceil(H * FS); farC.x = farC.getContext('2d');
@@ -1357,32 +1369,7 @@ function drawRing(dt) {
     }
   }
 
-  // 环上文字：只画朝向观察者的段，内容精简为 阶段码 + 数量
-  for (const s of slots) {
-    const st = PFDATA.stages[s.stage];
-    const isA = s.stage === active;
-    const ang = s.a + ringRot;
-    const norm = Math.atan2(Math.sin(ang), Math.cos(ang));
-    // 只画右侧可见区间；高亮段放宽到整个可见范围
-    const lim = isA ? 1.15 : 0.62;
-    if (Math.abs(norm) > lim) continue;
-
-    S.save();
-    S.rotate(ang + Math.PI / 2);
-    S.textAlign = 'center'; S.textBaseline = 'middle';
-
-    // 阶段码
-    S.font = '800 9px ' + FONT;
-    S.fillStyle = isA ? 'rgba(160,252,228,1)' : 'rgba(220,236,230,0.88)';
-    S.fillText(st.code, 0, -(band * 0.20));
-
-    // 数量
-    S.font = '800 12px ' + FONT;
-    S.fillStyle = isA ? '#ffffff' : 'rgba(210,230,223,0.9)';
-    S.fillText(st.n.toLocaleString('en-US'), 0, band * 0.02);
-
-    S.restore();
-  }
+  // 环上文字改由 DOM 渲染（renderRingLabels），canvas 只画几何形状
 
   // 内外圈刻度
   const RB = rimW();
@@ -1659,7 +1646,8 @@ function frame(now) {
   T += rawDt;
   if (!frozenNow) ixTick(rawDt);
   drawStage(dt);
-  drawLens();
+  positionRingLabels();
+  renderStageCard();
   drawPauseBadge();
   requestAnimationFrame(frame);
 }
