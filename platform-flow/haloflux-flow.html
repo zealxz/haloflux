@@ -58,8 +58,8 @@ header{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(5,minmax(0,
 .status .sm{color:var(--dim);font-size:8px;margin-top:2px}
 
 /* ---------- panels ---------- */
-.panels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px 12px 12px;border-top:1px solid var(--line);background:#0a0b0d}
-.p{border:1px solid var(--line);background:var(--panel);padding:7px 10px 6px;height:clamp(118px,17vh,168px);display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.panels{display:grid;grid-template-columns:1.15fr 0.85fr 1.3fr;gap:8px;padding:8px 12px 12px;border-top:1px solid var(--line);background:#0a0b0d}
+.p{border:1px solid var(--line);background:var(--panel);padding:7px 10px 6px;height:clamp(96px,12vh,132px);display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .p h3{margin:0 0 5px;font-size:9px;font-weight:800;letter-spacing:1.3px;color:var(--white);white-space:nowrap}
 .p .cap{margin-top:auto;font-size:8px;color:var(--dim);padding-top:3px;white-space:nowrap;overflow:hidden}
 .p canvas{width:100%;flex:1;min-height:0;display:block}
@@ -112,6 +112,27 @@ header{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(5,minmax(0,
   header{padding:10px 16px 0}
   .panels{grid-template-columns:minmax(0,1fr);padding:8px 16px 16px}
 }
+
+/* ---------- 底部数据面板 ---------- */
+.funnel{flex:1;min-height:0;display:flex;flex-direction:column;gap:1px;overflow:hidden;font-size:8.5px}
+.fr{display:grid;grid-template-columns:44px 1fr 44px 12px;align-items:center;gap:5px;line-height:1.3}
+.frc{color:#8fa8a2;font-weight:700;font-size:7.5px;letter-spacing:.3px}
+.frb{height:5px;background:#141619}
+.frb i{display:block;height:100%;background:#5eead4}
+.frn{text-align:right;color:#eef4f2;font-variant-numeric:tabular-nums}
+.frr{text-align:right;color:#fb923c;font-size:7px}
+.fr.narrow .frn{color:#fb923c}
+.statusgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:2px;font-size:8.5px;overflow:hidden}
+.stbar{display:flex;height:7px;gap:1px;margin-bottom:2px}
+.stbar i{display:block;height:100%}
+.str{display:grid;grid-template-columns:7px 1fr 44px 32px;align-items:center;gap:5px}
+.str i{display:block;width:6px;height:6px;border-radius:50%}
+.stk{color:#8fa8a2;font-size:8px}
+.stn{text-align:right;color:#eef4f2;font-variant-numeric:tabular-nums}
+.stp{text-align:right;color:#6b7b76;font-size:7.5px;font-variant-numeric:tabular-nums}
+.feed{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;font-size:8px;overflow:hidden}
+.feed div{white-space:nowrap;color:#7f918c;overflow:hidden;text-overflow:ellipsis}
+.feed div:last-child{color:#eef4f2;font-weight:600}
 </style>
 </head>
 <body>
@@ -132,15 +153,9 @@ header{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(5,minmax(0,
   </div>
 
   <section class="panels">
-    <div class="p"><h3>信息流事件 / EVENT STREAM</h3><div class="feed" id="feed"></div></div>
-    <div class="p"><h3>证据密度 / EVIDENCE DENSITY</h3><canvas id="cAdv"></canvas>
-      <div class="btns" id="advBtns"><span class="on">ADVECT</span><span>PROJECT</span><span>RENDER</span></div></div>
-    <div class="p"><h3>执行轨迹 / EXECUTION TRACE</h3><div class="code" id="code"></div></div>
-    <div class="p"><h3>写入差异 / WRITE DIFF</h3><canvas id="cDiff"></canvas><div class="cap">server diff · human confirm · atomic write</div></div>
-    <div class="p"><h3>来源装配 / SOURCE ADAPTERS</h3><div class="routes" id="routes"></div><div class="cap">controlled adapters → snapshot → release</div></div>
-    <div class="p"><h3>科学校验 / VALIDATION</h3><canvas id="cVal"></canvas><div class="cap">deterministic · versioned · traceable</div></div>
-    <div class="p"><h3>12 MODEL ROLES / DISPATCH</h3><div class="agents" id="agents"></div><div class="cap">scoped authority · bounded fan-out</div></div>
-    <div class="p"><h3>数据表谱系 / TABLE LINEAGE</h3><canvas id="cIdx"></canvas><div class="cap">620 tables · 598 migrations · 10 stages</div></div>
+    <div class="p"><h3>全链路计数 / PIPELINE COUNTS</h3><div class="funnel" id="funnel"></div></div>
+    <div class="p"><h3>运行状态 / RUN STATUS</h3><div class="statusgrid" id="runStatus"></div></div>
+    <div class="p"><h3>实时事件 / LIVE EVENTS</h3><div class="feed" id="feed"></div></div>
   </section>
 </div>
 
@@ -154,16 +169,36 @@ const PFDATA = {
   collectedAt: '2026-10-29 10:22',
   tables: 620,
   stages: [
-    { code: 'INTAKE', name: '自然语言输入', table: 'formulation_natural_language_intakes', n: 129 },
-    { code: 'AGENT',  name: 'Agent 编排',   table: 'agent_runs',                          n: 4367 },
-    { code: 'MODEL',  name: '模型调用',     table: 'model_invocations',                   n: 2707 },
-    { code: 'TOOL',   name: '确定性工具',   table: 'tool_runs',                           n: 3401 },
-    { code: 'SNAP',   name: '来源快照',     table: 'source_snapshots',                    n: 4940 },
-    { code: 'CLAIM',  name: '声明-来源绑定', table: 'claim_support_refs',                 n: 376 },
-    { code: 'ANSWER', name: '答案版本',     table: 'agent_answer_versions',               n: 169 },
-    { code: 'CAND',   name: '候选证据',     table: 'candidate_evidence',                  n: 1 },
-    { code: 'REL',    name: '已发布条目',   table: 'source_release_items',                n: 1 },
-    { code: 'FORMAL', name: '正式对象',     table: 'formal_business_object_versions',     n: 194 }
+    { code: 'INTAKE', name: '输入理解', kind: 'prompt',
+      biz: '业务人员用自然语言描述需求，系统解析出剂型、规格、目标人群等要素。',
+      from: '一句话需求', to: '结构化问题', table: 'formulation_natural_language_intakes', n: 129 },
+    { code: 'PLAN', name: '任务规划', kind: 'agent',
+      biz: '拆解成若干专业子任务，分派给对应领域的 Agent 并行处理。',
+      from: '结构化问题', to: '任务队列', table: 'agent_runs', n: 4367 },
+    { code: 'REASON', name: '模型推理', kind: 'model',
+      biz: '各领域 Agent 调用大模型做专业判断：辅料筛选、工艺路线、相容性、法规适用。',
+      from: '任务队列', to: '专业意见', table: 'model_invocations', n: 2707 },
+    { code: 'COMPUTE', name: '确定性计算', kind: 'tool',
+      biz: '名称归一、单位换算、阈值比较等必须可复现的计算，不交给模型。',
+      from: '专业意见', to: '校验数值', table: 'tool_runs', n: 3401 },
+    { code: 'RETRIEVE', name: '来源检索', kind: 'source',
+      biz: '从药监局、FDA、药典等受控来源抓取原始资料，存档并计算哈希。',
+      from: '查询条件', to: '原始快照', table: 'source_snapshots', n: 4940 },
+    { code: 'BIND', name: '证据绑定', kind: 'evidence',
+      biz: '把每条结论绑定到具体来源快照上，形成可追溯的引用关系。',
+      from: '专业意见 + 快照', to: '带出处的结论', table: 'claim_support_refs', n: 376 },
+    { code: 'SYNTH', name: '综合成稿', kind: 'answer',
+      biz: '把带出处的结论合并成一份完整答案，保留冲突与不确定性说明。',
+      from: '带出处的结论', to: '答案草稿', table: 'agent_answer_versions', n: 169 },
+    { code: 'REVIEW', name: '候选复核', kind: 'review',
+      biz: '独立复核员重读原始材料，核对结论是否站得住，决定能否进入候选。',
+      from: '答案草稿', to: '可发布候选', table: 'candidate_evidence', n: 1 },
+    { code: 'PUBLISH', name: '发布归档', kind: 'release',
+      biz: '通过复核的候选进入正式来源库，成为后续所有任务可直接引用的资产。',
+      from: '可发布候选', to: '已发布来源', table: 'source_release_items', n: 1 },
+    { code: 'DELIVER', name: '交付输出', kind: 'formal',
+      biz: '生成正式处方版本、报告与可导出文件，绑定不可变版本号。',
+      from: '已发布来源 + 草稿', to: '正式交付物', table: 'formal_business_object_versions', n: 194 }
   ],
   // 运行状态（真实）
   runs: { succeeded: 2688, failed: 1054, cancelled: 612, running: 7, queued: 6, total: 4367 },
@@ -384,6 +419,11 @@ const IX = {
   manual: 0,
   justReleased: 0     // 刚松手：短时间内不因悬停而冻结
 };
+// ptr 与 IX 指向同一状态对象：ptr 用于阶段命中与锁定，IX 用于拖拽与惯性
+const ptr = IX;
+ptr.hoverStage = -1;
+ptr.lockedStage = -1;
+
 const cam = { x: 0, y: 0, z: 1 };
 let shots = [], shotI = 0, shotT = 0, camPhase = 'hold', camFrom = null;
 function buildShots() {
@@ -490,60 +530,102 @@ function ixWrap(dA) {
   return dA;
 }
 
+// ---- 指针交互 ----
+// 悬停：高亮该阶段并显示说明卡（不改变转盘状态）
+// 拖拽：拨动转盘
+// 点击：锁定某阶段 —— 锁定后转盘停住、说明卡固定，直到再次点击或双击解锁
+let downX = 0, downY = 0, downT = 0;
+
 stage.addEventListener('pointermove', function (ev) {
   const p = ixPos(ev);
   IX.hx = p.x; IX.hy = p.y;
   IX.hover = ixOverRing(p.x, p.y);
 
   if (IX.dragging) {
-    // 直接拨动圆盘：按指针绕圆心的角度变化旋转 ringRot
     const a = ixAngleOf(p.x, p.y);
     const dA = ixWrap(a - IX.lastAngle);
     IX.lastAngle = a;
-    ringRot += dA;
-    // 记录角速度（rad/s）：用本次位移除以时间差
+    // 锁定状态下拖拽不解锁，只转视角；未锁定时直接拨动
+    if (ptr.lockedStage < 0) ringRot += dA;
     const now = performance.now();
     const dtm = Math.max(8, now - IX.lastMoveT) / 1000;
     IX.lastMoveT = now;
     IX.dragVel = dA / dtm;
     IX.manual = 1;
-    IX.frozen = 0.9;
     return;
   }
-  stage.style.cursor = IX.hover ? 'zoom-in' : 'grab';
+
+  // 命中判定：指针落在哪个阶段的扇区
+  ptr.hoverStage = ixStageAt(p.x, p.y);
+  stage.style.cursor = ptr.hoverStage >= 0 ? 'pointer' : 'grab';
 });
 
 stage.addEventListener('pointerleave', function () {
   IX.hover = false;
-  IX.justReleased = 0;
+  ptr.hoverStage = -1;
   if (!IX.dragging) stage.style.cursor = 'default';
 });
 
 stage.addEventListener('pointerdown', function (ev) {
   const p = ixPos(ev);
+  downX = p.x; downY = p.y; downT = performance.now();
   IX.dragging = true;
   IX.lastAngle = ixAngleOf(p.x, p.y);
   IX.lastMoveT = performance.now();
   IX.dragVel = 0;
-  IX.frozen = 0.9;
   IX.manual = 1;
   stage.style.cursor = 'grabbing';
-  try { stage.setPointerCapture(ev.pointerId); } catch (e) {}
   ev.preventDefault();
 });
 
-stage.addEventListener('pointerup', function (ev) {
+window.addEventListener('pointerup', function (ev) {
+  if (!IX.dragging) return;
+  const p = ixPos(ev);
   IX.dragging = false;
-  // 松手后保持悬停暂停关闭，让转盘继续转；直到指针离开再重置
-  IX.justReleased = 1;
   stage.style.cursor = 'grab';
-  try { stage.releasePointerCapture(ev.pointerId); } catch (e) {}
+
+  // 判定是"点击"而非"拖拽"：位移小、时间短
+  const moved = Math.hypot(p.x - downX, p.y - downY);
+  const elapsed = performance.now() - downT;
+  if (moved < 8 && elapsed < 400) {
+    const hit = ixStageAt(p.x, p.y);
+    if (hit >= 0) {
+      ptr.lockedStage = (ptr.lockedStage === hit) ? -1 : hit;
+    } else {
+      ptr.lockedStage = -1;
+    }
+  }
 });
 
-// 双击：交还自动运镜
+// 双击：解锁并恢复自动旋转
 stage.addEventListener('dblclick', function () {
-  IX.frozen = 0; IX.dragVel = 0; IX.manual = 0;
+  ptr.lockedStage = -1;
+  IX.dragVel = 0;
+  IX.manual = 0;
 });
+
+// 屏幕坐标 -> 阶段索引（考虑相机与环旋转）
+function ixStageAt(lx, ly) {
+  const w = screenToWorldPt(lx, ly);
+  const dx = w.x - cx, dy = w.y - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist < R - 1 || dist > RO + 1) return -1;
+  const n = PFDATA.stages.length;
+  // 环上某角度对应哪个扇区（考虑 ringRot）
+  let ang = Math.atan2(dy, dx) - ringRot + Math.PI / 2;
+  while (ang < 0) ang += TAU;
+  while (ang >= TAU) ang -= TAU;
+  const idx = Math.floor(ang / (TAU / n));
+  return Math.min(n - 1, Math.max(0, idx));
+}
+
+// 屏幕坐标 -> 世界坐标
+function screenToWorldPt(lx, ly) {
+  return {
+    x: (lx - W / 2) / cam.z + cam.x,
+    y: (ly - H / 2) / cam.z + cam.y
+  };
+}
 
 function ixTick(dt) {
   // 松手惯性：按 dt 积分，指数衰减，衰减完自然接回匀速慢转
@@ -569,58 +651,116 @@ function ixSnapshot() {
 }
 
 function drawLens() {
-  if (!IX.hover || IX.dragging || !IX.snap) return;
-  const r = IX.lensR, z = IX.zoom;
-  const cxL = Math.max(r + 2, Math.min(W - r - 2, IX.hx));
-  const cyL = Math.max(r + 2, Math.min(H - r - 2, IX.hy));
+  const active = ptr.lockedStage >= 0 ? ptr.lockedStage : ptr.hoverStage;
+  if (active < 0) return;
+  const st = PFDATA.stages[active];
 
-  // 镜内：直接按放大倍率重绘环带面板（用高分辨率源图，不靠拉伸）
+  // 说明卡：右侧浮层，宽度自适应，避免遮挡环的核心区
+  const cardW = Math.min(460, W * 0.33);
+  const lines = [];
   S.save();
-  S.setTransform(1, 0, 0, 1, 0, 0);
-  S.beginPath(); S.arc(cxL * DPR, cyL * DPR, r * DPR, 0, TAU); S.clip();
-  S.fillStyle = '#05080a';
-  S.fillRect((cxL - r) * DPR, (cyL - r) * DPR, 2 * r * DPR, 2 * r * DPR);
+  S.setTransform(DPR, 0, 0, DPR, 0, 0);
+  S.globalAlpha = 1;
+  S.globalCompositeOperation = 'source-over';
 
-  // 以指针为镜心，把环带局部按 z 倍重绘
-  S.translate(cxL * DPR, cyL * DPR);
-  S.scale(DPR * z, DPR * z);
-  S.translate(-IX.hx, -IX.hy);
-  // 用相机变换重画场景（保持与主视图一致的世界坐标）
-  camT(S, 1);
-  try { drawRing(0); } catch (e) {}
-  S.restore();
+  // 先量算说明文字需要几行
+  const pad = 16;
+  const tw = cardW - pad * 2;
+  S.font = '500 11.5px ' + FONT;
+  {
+    let line = '';
+    for (const ch of st.biz) {
+      const test = line + ch;
+      if (S.measureText(test).width > tw) { lines.push(line); line = ch; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+  }
 
-  // 镜框与标签
-  S.save();
-  S.setTransform(1, 0, 0, 1, 0, 0);
-  S.beginPath(); S.arc(cxL * DPR, cyL * DPR, r * DPR, 0, TAU);
-  S.strokeStyle = 'rgba(94,234,212,0.9)'; S.lineWidth = 1.8 * DPR; S.stroke();
-  S.beginPath(); S.arc(cxL * DPR, cyL * DPR, (r + 6) * DPR, 0, TAU);
-  S.strokeStyle = 'rgba(94,234,212,0.16)'; S.lineWidth = 8 * DPR; S.stroke();
+  const cardH = 148 + lines.length * 16;
+  const cardX = W - cardW - 16;
+  const cardY = Math.max(16, (H - cardH) / 2);
 
-  S.font = '700 ' + (8 * DPR) + 'px ' + FONT;
-  S.fillStyle = 'rgba(94,234,212,0.95)';
-  S.textAlign = 'center';
-  S.fillText('PAUSED \u00b7 ' + z.toFixed(1) + '\u00d7 LIVE', cxL * DPR, (cyL + r - 12) * DPR);
-  S.textAlign = 'left';
+  // 卡片
+  S.fillStyle = 'rgba(7,13,15,0.95)';
+  S.strokeStyle = 'rgba(120,235,210,0.5)';
+  S.lineWidth = 1.1;
+  S.beginPath(); S.roundRect(cardX, cardY, cardW, cardH, 5); S.fill(); S.stroke();
+  S.fillStyle = 'rgba(120,235,210,0.85)';
+  S.fillRect(cardX, cardY, 3, cardH);
+
+  let y = cardY + 14;
+  S.textAlign = 'left'; S.textBaseline = 'top';
+
+  // 步骤序号
+  S.font = '800 9.5px ' + FONT;
+  S.fillStyle = 'rgba(120,235,210,0.65)';
+  S.fillText('STEP ' + (active + 1) + ' / ' + PFDATA.stages.length + '   ' + st.code, cardX + pad, y);
+  y += 15;
+
+  // 标题
+  S.font = '800 19px ' + FONT;
+  S.fillStyle = '#effaf6';
+  S.fillText(st.name, cardX + pad, y);
+  y += 22;
+
+  // 计数
+  S.font = '600 10px ' + FONT;
+  S.fillStyle = 'rgba(150,185,175,0.8)';
+  S.fillText(st.n.toLocaleString('en-US') + ' 条记录  ·  ' + st.table, cardX + pad, y);
+  y += 16;
+
+  // 分隔
+  S.strokeStyle = 'rgba(120,235,210,0.16)'; S.lineWidth = 0.8;
+  S.beginPath(); S.moveTo(cardX + pad, y); S.lineTo(cardX + cardW - pad, y); S.stroke();
+  y += 11;
+
+  // 业务说明
+  S.font = '500 10px ' + FONT;
+  S.fillStyle = 'rgba(214,232,226,0.94)';
+  for (let i = 0; i < lines.length; i++) {
+    S.fillText(lines[i], cardX + pad, y);
+    y += 16;
+  }
+  y += 6;
+
+  // 输入 → 输出
+  S.font = '700 9.5px ' + FONT;
+  S.fillStyle = 'rgba(120,235,210,0.75)';
+  S.fillText('输入', cardX + pad, y);
+  S.fillStyle = 'rgba(232,244,240,0.9)';
+  S.font = '600 11px ' + FONT;
+  S.fillText(st.from, cardX + pad + 30, y - 1);
+  y += 15;
+  S.font = '700 9.5px ' + FONT;
+  S.fillStyle = 'rgba(120,235,210,0.75)';
+  S.fillText('输出', cardX + pad, y);
+  S.fillStyle = 'rgba(232,244,240,0.9)';
+  S.font = '600 9.5px ' + FONT;
+  S.font = '600 11px ' + FONT;
+  S.fillText(st.to, cardX + pad + 32, y - 1);
+
   S.restore();
 }
 
 function drawPauseBadge() {
-  if (!(IX.hover || IX.frozen > 0 || IX.dragging)) return;
+  // 锁定提示：告知用户当前固定在哪个阶段、如何解除
+  if (ptr.lockedStage < 0) return;
+  const st = PFDATA.stages[ptr.lockedStage];
   S.save();
   S.setTransform(DPR, 0, 0, DPR, 0, 0);
-  S.font = '700 9px ' + FONT;
-  const label = IX.dragging ? 'DRAGGING ARC \u00b7 RELEASE TO COAST' : 'PAUSED \u00b7 HOVER TO INSPECT';
-  const w = S.measureText(label).width + 20;
-  S.fillStyle = 'rgba(8,12,14,0.85)';
-  S.strokeStyle = 'rgba(94,234,212,0.45)';
-  S.lineWidth = 1;
-  S.beginPath(); S.roundRect(W / 2 - w / 2, 12, w, 22, 3); S.fill(); S.stroke();
-  S.fillStyle = 'rgba(94,234,212,0.95)';
-  S.textAlign = 'center';
-  S.fillText(label, W / 2, 27);
-  S.textAlign = 'left';
+  S.font = '700 9.5px ' + FONT;
+  const label = '已锁定 STEP ' + (ptr.lockedStage + 1) + ' · ' + st.name + '   （再次点击或双击解除）';
+  const w = S.measureText(label).width + 24;
+  const h = 24;
+  S.fillStyle = 'rgba(8,16,18,0.92)';
+  S.strokeStyle = 'rgba(120,235,210,0.7)';
+  S.lineWidth = 1.2;
+  S.beginPath(); S.roundRect(W / 2 - w / 2, 12, w, h, 4); S.fill(); S.stroke();
+  S.fillStyle = 'rgba(140,245,220,0.98)';
+  S.textAlign = 'center'; S.textBaseline = 'middle';
+  S.fillText(label, W / 2, 12 + h / 2);
+  S.textAlign = 'left'; S.textBaseline = 'alphabetic';
   S.restore();
 }
 
@@ -1099,27 +1239,20 @@ function updateRing(dt) {
   ringRot += RING_SPIN * dt;
 }
 function buildCards() {
+  // 环带不再切随机碎片：10 个等分扇区，每段对应一个真实业务阶段
   slots = [];
-  const band = RO - R, mid = R + band * 0.42;
-  // 每个角度先算出它属于哪个真实阶段，再用该阶段的量级决定卡片厚度与间隙
   const n = PFDATA.stages.length;
-  const maxN = Math.max.apply(null, PFDATA.stages.map(function (s) { return s.n; }));
-  const lgMax = Math.log(maxN + 1);
-  let a = 0;
-  while (a < TAU - 0.03) {
-    // 角度 -> 阶段索引（与 drawFlowArc 的分段一致，从 -90° 起）
-    let ang = a - Math.PI / 2;
-    while (ang < 0) ang += TAU;
-    while (ang >= TAU) ang -= TAU;
-    const si = Math.floor(ang / (TAU / n)) % n;
-    const st = PFDATA.stages[si];
-    // 量级越大 → 卡片越厚、间隙越小（信息密度高）
-    const rel = Math.log(st.n + 1) / lgMax;          // 0..1
-    const hpx = 14 + 52 * rel + rr(-3, 3);            // 14..66 px
-    const gapPx = 11 - 7 * rel + rr(-1.5, 1.5);       // 4..11 px
-    const da = hpx / mid, gap = Math.max(1.5, gapPx) / mid;
-    slots.push({ a: a + da / 2, da, hpx, c: null, flash: 0, stage: si, rel: rel });
-    a += da + gap;
+  const seg = TAU / n;
+  for (let i = 0; i < n; i++) {
+    const st = PFDATA.stages[i];
+    slots.push({
+      a: -Math.PI / 2 + seg * (i + 0.5),   // 段中心角
+      span: seg * 0.94,                    // 段宽（留 6% 间隙）
+      stage: i,
+      n: st.n,
+      c: null,
+      flash: 0
+    });
   }
   Object.assign(rot, { from: 0, to: 0, t: 1, dur: 1, hold: 0 });
 }
@@ -1272,90 +1405,113 @@ function pickBlock(h, rel) {
   }
   return rel != null && rel < 0.45 ? 'para' : 'bars';
 }
-function renderSlot(s) {
-  const band = RO - R, h = s.hpx;
-  const c = document.createElement('canvas');
-  c.width = Math.ceil(band * RING_SC); c.height = Math.ceil((h + 2) * RING_SC);
-  const x = c.getContext('2d'); x.scale(RING_SC, RING_SC); x.textBaseline = 'top';
-  const RB = rimW(), dz0 = RB + 6, dz1 = band * 0.72, oz0 = band * 0.78, oz1 = band - RB - 5;
-  const split = rnd() < 0.45 && dz1 - dz0 > 60;
-  const blocks = [];
-  if (split) { const m = dz0 + (dz1 - dz0) * rr(0.42, 0.6); blocks.push([dz0, m], [m + rr(4, 8), dz1]); }
-  else blocks.push([dz0, dz1 - rr(0, 18)]);
-  for (const [b0, b1] of blocks) {
-    const tint = pick(TINTS), y0 = 1 + rr(0, 2), y1 = h + 1 - rr(0, 2);
-    x.save(); x.beginPath(); x.rect(b0, y0 - 0.5, b1 - b0, y1 - y0 + 1); x.clip();
-    BLOCKS[pickBlock(y1 - y0, s.rel)](x, b0, b1, y0, y1, tint);
-    x.restore();
-  }
-  // outer index column: tiny ids + tick groups
-  const pitch = rr(8, 12);
-  x.font = `600 3.1px ${FONT}`;
-  for (let yy = rr(1, pitch); yy < h - 2; yy += pitch) {
-    if (rnd() < 0.15) continue;
-    let xx = oz0 + rr(0, 3);
-    if (rnd() < 0.45) { x.fillStyle = `rgba(225,228,236,${rr(0.55, 0.95)})`; x.fillText(String((rnd() * 999) | 0).padStart(3, '0'), xx, yy - 1); xx += 9; }
-    const n = 1 + (rnd() * 3 | 0);
-    for (let i = 0; i < n && xx < oz1; i++) { x.fillStyle = `rgba(225,228,236,${rr(0.5, 0.95)})`; x.fillRect(xx, yy, rr(1.2, 2.4), 1.2); xx += rr(2.4, 3.6); }
-  }
-  if (rnd() < 0.45) {
-    x.fillStyle = 'rgba(220,224,232,.7)';
-    for (let xx = dz0; xx < oz1; xx += rr(2.4, 4.5)) if (rnd() < 0.8) x.fillRect(xx, h + 0.4, 1.1, 1.1);
-  }
-  s.c = c;
-}
+// renderSlot 已移除：环带改为业务阶段扇区，不再生成随机数据块
+
 function rimW() { return Math.max(3, (RO - R) * 0.065 * C.rimWidth); }
 function drawRing(dt) {
   const band = RO - R;
   S.globalCompositeOperation = 'source-over';
   S.save(); S.translate(cx, cy);
+
   S.beginPath(); S.arc(0, 0, RO, 0, TAU); S.arc(0, 0, R, 0, TAU, true);
   S.fillStyle = '#040506'; S.fill('evenodd');
-  let regen = 1;
+
+  const maxN = Math.max.apply(null, PFDATA.stages.map(function (s) { return s.n; }));
+  const n = PFDATA.stages.length;
+  const active = ptr.lockedStage >= 0 ? ptr.lockedStage : ptr.hoverStage;
+
   for (const s of slots) {
-    const A = s.a + ringRot;
-    if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 2.2);
-    const mid = R + band * 0.42;
-    const sp = toScreen(cx + Math.cos(A) * mid, cy + Math.sin(A) * mid);
-    if (sp.x < -140 || sp.x > W + 140 || sp.y < -140 || sp.y > H + 140) continue;
-    if (!s.c || (regen > 0 && rnd() < 0.02)) { renderSlot(s); regen--; }
-    S.save(); S.rotate(A);
-    const hh = s.hpx + 2;
-    S.drawImage(s.c, R, -hh / 2, band, hh);
-    if (s.flash > 0.02) { S.globalCompositeOperation = 'lighter'; S.globalAlpha = s.flash; S.drawImage(s.c, R, -hh / 2, band, hh); S.globalAlpha = 1; S.globalCompositeOperation = 'source-over'; }
+    const st = PFDATA.stages[s.stage];
+    const a0 = s.a - s.span / 2 + ringRot;
+    const a1 = s.a + s.span / 2 + ringRot;
+    const isA = s.stage === active;
+    const rel = Math.log(st.n + 1) / Math.log(maxN + 1);
+
+    // 扇区
+    const fillA = 0.04 + 0.16 * rel + (isA ? 0.16 : 0);
+    S.beginPath();
+    S.arc(0, 0, RO - 2, a0, a1);
+    S.arc(0, 0, R + 2, a1, a0, true);
+    S.closePath();
+    S.fillStyle = isA ? 'rgba(110,235,205,' + fillA.toFixed(3) + ')' : 'rgba(140,185,175,' + fillA.toFixed(3) + ')';
+    S.fill();
+    S.strokeStyle = isA ? 'rgba(120,240,210,0.95)' : 'rgba(140,180,170,0.28)';
+    S.lineWidth = isA ? 1.8 : 0.6;
+    S.stroke();
+
+    // 量级条：贴在段内侧，长度反映真实数量
+    const barA0 = a0 + 0.012, barA1 = a1 - 0.012;
+    const barR0 = R + 8, barLen = (band - 26) * rel;
+    S.beginPath();
+    S.arc(0, 0, barR0 + barLen, barA0, barA1);
+    S.arc(0, 0, barR0, barA1, barA0, true);
+    S.closePath();
+    S.fillStyle = isA ? 'rgba(120,240,210,0.55)' : 'rgba(150,200,190,0.25)';
+    S.fill();
+
+    // 流向箭头（段与段之间）
+    if (s.stage < n - 1) {
+      const seg = TAU / n;
+      const am = s.a + s.span / 2 + ringRot + (seg - s.span) / 2;
+      const rm = (R + RO) / 2;
+      const px = Math.cos(am) * rm, py = Math.sin(am) * rm;
+      const tx = -Math.sin(am), ty = Math.cos(am);
+      const L = 7;
+      S.beginPath();
+      S.moveTo(px + tx * L, py + ty * L);
+      S.lineTo(px + ty * L * 0.6, py - tx * L * 0.6);
+      S.lineTo(px - ty * L * 0.6, py + tx * L * 0.6);
+      S.closePath();
+      S.fillStyle = 'rgba(160,210,195,0.6)';
+      S.fill();
+    }
+  }
+
+  // 环上文字：只画朝向观察者的段，内容精简为 阶段码 + 数量
+  for (const s of slots) {
+    const st = PFDATA.stages[s.stage];
+    const isA = s.stage === active;
+    const ang = s.a + ringRot;
+    const norm = Math.atan2(Math.sin(ang), Math.cos(ang));
+    // 只画右侧可见区间；高亮段放宽到整个可见范围
+    const lim = isA ? 1.15 : 0.62;
+    if (Math.abs(norm) > lim) continue;
+
+    S.save();
+    S.rotate(ang + Math.PI / 2);
+    S.textAlign = 'center'; S.textBaseline = 'middle';
+
+    // 阶段码
+    S.font = '800 9px ' + FONT;
+    S.fillStyle = isA ? 'rgba(160,252,228,1)' : 'rgba(220,236,230,0.88)';
+    S.fillText(st.code, 0, -(band * 0.20));
+
+    // 数量
+    S.font = '800 12px ' + FONT;
+    S.fillStyle = isA ? '#ffffff' : 'rgba(210,230,223,0.9)';
+    S.fillText(st.n.toLocaleString('en-US'), 0, band * 0.02);
+
     S.restore();
   }
-  // rulers & rim bands (all rotate with the ring)
+
+  // 内外圈刻度
+  const RB = rimW();
   const tick = (step, fn) => {
     const n0 = Math.floor((-thV - 0.05 - ringRot) / step), n1 = Math.ceil((thV + 0.05 - ringRot) / step);
-    for (let n = n0; n <= n1; n++) { const a = n * step + ringRot; fn(Math.cos(a), Math.sin(a), n); }
+    for (let k = n0; k <= n1; k++) { const a = k * step + ringRot; fn(Math.cos(a), Math.sin(a), k); }
   };
-  const RB = rimW();
-  // inner + outer rim bands: dense white hairlines that give the edge its thickness
   S.beginPath();
-  tick(0.14 / C.rimDensity * Math.PI / 180, (ca, sa, n) => {
-    const m = ((n % 6) + 6) % 6;
-    const li = m === 0 ? RB : RB * (0.5 + 0.35 * hash(n));
-    const lo = m === 0 ? RB : RB * (0.5 + 0.35 * hash(n + 77));
+  tick(0.5 * Math.PI / 180, (ca, sa, k) => {
+    const m = ((k % 6) + 6) % 6;
+    const li = m === 0 ? RB : RB * 0.5;
     S.moveTo(ca * (R + 1.5), sa * (R + 1.5)); S.lineTo(ca * (R + 1.5 + li), sa * (R + 1.5 + li));
-    S.moveTo(ca * (RO - 1.5), sa * (RO - 1.5)); S.lineTo(ca * (RO - 1.5 - lo), sa * (RO - 1.5 - lo));
+    S.moveTo(ca * (RO - 1.5), sa * (RO - 1.5)); S.lineTo(ca * (RO - 1.5 - li), sa * (RO - 1.5 - li));
   });
-  S.globalCompositeOperation = 'lighter';
-  S.strokeStyle = `rgba(232,235,242,${Math.min(1, 0.035 * C.rimBright * C.rimBright)})`; S.lineWidth = 1.2 + 2.4 * C.rimBright; S.stroke();   // glow grows with brightness
-  S.strokeStyle = `rgba(232,235,242,${Math.min(1, 0.08 * C.rimBright)})`; S.lineWidth = 1.4; S.stroke();
-  S.globalCompositeOperation = 'source-over'; S.strokeStyle = `rgba(240,242,248,${Math.min(1, 0.88 * C.rimBright)})`; S.lineWidth = 0.55; S.stroke();
-  // rims
-  const arc = (r, lw, a) => { S.strokeStyle = `rgba(232,235,242,${a})`; S.lineWidth = lw; S.beginPath(); S.arc(0, 0, r, -thV, thV); S.stroke(); };
-  arc(R, 1.5, 1); arc(R + RB + 3, 0.6, 0.6); arc(RO - RB - 3, 0.6, 0.55);
-  S.globalCompositeOperation = 'lighter'; arc(RO, 3.5, 0.1); S.globalCompositeOperation = 'source-over';
-  arc(RO, 1.3, 0.95);
-  S.beginPath();
-  tick(1 * Math.PI / 180, (ca, sa) => { S.moveTo(ca * (R - 2), sa * (R - 2)); S.lineTo(ca * (R - 5), sa * (R - 5)); });
-  tick(0.25 * Math.PI / 180, (ca, sa, n) => {
-    const m = ((n % 20) + 20) % 20, L = m === 0 ? 9 : m % 5 === 0 ? 5 : 2.5;
-    S.moveTo(ca * (RO + 2), sa * (RO + 2)); S.lineTo(ca * (RO + 2 + L), sa * (RO + 2 + L));
-  });
-  S.strokeStyle = 'rgba(230,233,240,.5)'; S.lineWidth = 0.6; S.stroke();
+  S.strokeStyle = 'rgba(232,235,242,' + Math.min(1, 0.26 * C.rimBright) + ')';
+  S.lineWidth = 0.55; S.stroke();
+
+  const arc = (r, lw, a) => { S.strokeStyle = 'rgba(232,235,242,' + a + ')'; S.lineWidth = lw; S.beginPath(); S.arc(0, 0, r, -thV, thV); S.stroke(); };
+  arc(R, 1.4, 0.9); arc(RO, 1.3, 0.95);
   S.restore();
 }
 
@@ -1534,9 +1690,8 @@ function kpiTick() {
 kpiTick(); setInterval(kpiTick, 2600);
 
 /* =========================================================
-   PANELS
+   FEED — 实时事件流
    ========================================================= */
-// --- investigation feed ---
 const ACTS = PFDATA.events;
 const VERBS = ['src', 'model', 'emit', 'check', 'stage', 'audit'];
 const feed = document.getElementById('feed');
@@ -1556,215 +1711,78 @@ function feedPush() {
 for (let i = 0; i < 12; i++) feedPush();
 setInterval(feedPush, 650);
 
-// --- method workspace (typing) ---
-const CODE = [
-  ['intake', 'parse', '()'],
-  ['agent_runs', 'dispatch', '(intake)'],
-  ['model_invocations', 'invoke', '(agent_runs)'],
-  ['tool_runs', 'execute', '(agent_runs)'],
-  ['source_snapshots', 'capture', '(tool_runs)'],
-  ['claim_support_refs', 'bind', '(source_snapshots)'],
-  ['agent_answer_versions', 'render', '(claim_support_refs)'],
-  ['candidate_evidence', 'append', '(answers)'],
-  ['source_release_items', 'publish', '(candidate_evidence)'],
-  ['formal_business_object_versions', 'commit', '(release)']
-];
-const codeEl = document.getElementById('code');
-let cLine = 0, cChar = 0, cNum = 7, typed = [];
-const codeStr = l => (l[0] ? l[0] + ' = ' : '') + l[1] + l[2];
-function codeHtml(l, n) {
-  const pre = l[0] ? l[0] + ' = ' : '', full = pre + l[1] + l[2];
-  n = n == null ? full.length : n;
-  let out = '', i = 0;
-  const seg = (s, cls) => { const take = Math.max(0, Math.min(s.length, n - i)); if (take) out += `<span class="${cls}">${s.slice(0, take)}</span>`; i += s.length; };
-  seg(pre, 'op'); seg(l[1], 'fn'); seg(l[2], 'op');
-  return out;
-}
-function codeTick() {
-  const l = CODE[cLine];
-  cChar += 2;
-  if (cChar > codeStr(l).length + 6) {
-    typed.push(`<div><span class="ln">${String(cNum++).padStart(3, '0')}</span>${codeHtml(l)}</div>`);
-    if (typed.length > 12) typed.shift();
-    cLine = (cLine + 1) % CODE.length; cChar = 0;
-  }
-  codeEl.innerHTML = typed.join('') + `<div><span class="ln">${String(cNum).padStart(3, '0')}</span>${codeHtml(CODE[cLine], cChar)}<span class="caret"></span></div>`;
-}
-setInterval(codeTick, 70);
 
-// --- routes ---
-const ROUTES = PFDATA.sources.map(s => s.h);
-const COLSR = ['fetch', 'snap', 'release'];
-const routesEl = document.getElementById('routes');
-const rState = ROUTES.map(() => (rnd() * 4) | 0);
-function renderRoutes() {
-  let h = '<span class="h">PAPER</span><span class="h">EXTRACT</span><span class="h">CODE</span><span class="h">CHECK</span>';
-  ROUTES.forEach((n, i) => {
-    h += `<span class="nm">${n}</span>`;
-    COLSR.forEach((c, j) => {
-      const st = rState[i];
-      const cls = j < st ? 'done' : j === st ? (i === 5 ? 'pk' : 'on') : '';
-      h += `<span><span class="chip ${cls}">${c}</span></span>`;
-    });
-  });
-  routesEl.innerHTML = h;
-}
-setInterval(() => { const i = (rnd() * ROUTES.length) | 0; rState[i] = (rState[i] + 1) % 4; renderRoutes(); }, 500);
-renderRoutes();
+/* =========================================================
+   底部面板渲染：真实数据，静态呈现
+   ========================================================= */
+const fmtn2 = n => n.toLocaleString('en-US');
 
-// --- agents ---
-const ROLES = ['read', 'build', 'review', 'qa'];
-const AG = PFDATA.roles.map((r, i) => ({ id: String(i + 1).padStart(2, '0'), role: ROLES[i % 4], label: r[0].replace(/_/g, ' '), n: r[1], p: rnd() * 8, sp: rr(0.6, 2), st: 'working' }));
-const agEl = document.getElementById('agents');
-const ROLE_COL = { read: '#98e0cf', build: '#f0a6c6', review: '#d7dae0', qa: '#f0a6c6' };
-agEl.innerHTML = AG.map(a => `<div class="ag"><span class="id">${a.id}</span><span class="rl">${a.label}</span><span class="cells">${'<i></i>'.repeat(6)}</span><span class="st"></span></div>`).join('');
-const agRows = [...agEl.children];
-function agentsTick(dt) {
-  AG.forEach((a, i) => {
-    a.p += a.sp * dt;
-    if (a.p > 9) { a.p = 0; a.sp = rr(0.6, 2); }
-    // 进度仍按原动画走，但满格比例反映该角色的真实调用量占比
-    const share = a.n / 478;
-    const done = Math.min(6, Math.floor(a.p * (0.35 + 0.65 * share)));
-    const cells = agRows[i].children[2].children;
-    for (let k = 0; k < 6; k++) cells[k].style.background = k < done ? ROLE_COL[a.role] : k === done ? '#5a5e66' : '#1d1f24';
-    const st = a.p < 0.6 ? 'dispatch' : a.p > 6 ? 'idle' : 'working';
-    const se = agRows[i].children[3];
-    if (se.textContent !== st) { se.textContent = st; se.className = 'st' + (st === 'working' ? ' w' : ''); }
-  });
+function renderFunnel() {
+  const el = document.getElementById('funnel');
+  if (!el) return;
+  const st = PFDATA.stages;
+  const max = Math.max.apply(null, st.map(function (s) { return s.n; }));
+  el.innerHTML = st.map(function (s, i) {
+    const pct = Math.max(3, (s.n / max) * 100);
+    const prev = i > 0 ? st[i - 1].n : null;
+    const churn = prev ? s.n / prev : null;
+    const narrow = churn !== null && churn < 0.2;
+    return '<div class="fr' + (narrow ? ' narrow' : '') + '">' +
+      '<span class="frc">' + s.code + '</span>' +
+      '<span class="frb"><i style="width:' + pct.toFixed(1) + '%"></i></span>' +
+      '<span class="frn">' + fmtn2(s.n) + '</span>' +
+      '<span class="frr">' + (narrow ? '▼' : '') + '</span>' +
+      '</div>';
+  }).join('');
 }
 
-// --- canvases ---
-const cAdv = document.getElementById('cAdv'), cDiff = document.getElementById('cDiff'), cVal = document.getElementById('cVal'), cIdx = document.getElementById('cIdx');
-let advP = [];
-function resizePanels() {
-  [cAdv, cDiff, cVal, cIdx].forEach(fit);
-  advP = Array.from({ length: 320 }, () => ({ x: rnd() * cAdv.w, y: rnd() * cAdv.h, l: rnd() * 3 }));
-  valBuf = [[], [], []];
-}
-let T = 0;
-const flow = (x, y) => Math.sin(x * 0.035 + T * 0.6) * Math.cos(y * 0.05 - T * 0.4) * Math.PI + Math.sin((x + y) * 0.01 + T * 0.2);
-function drawAdv(dt) {
-  const x = cAdv.x, w = cAdv.w, h = cAdv.h;
-  x.fillStyle = 'rgba(14,15,18,0.22)'; x.fillRect(0, 0, w, h);
-  x.fillStyle = 'rgba(120,125,135,.25)';
-  for (let i = 6; i < w; i += 12) for (let j = 6; j < h; j += 12) x.fillRect(i, j, 1, 1);
-  x.strokeStyle = 'rgba(235,238,244,.7)'; x.lineWidth = 0.8; x.beginPath();
-  for (const p of advP) {
-    const a = flow(p.x, p.y), nx = p.x + Math.cos(a) * 22 * dt, ny = p.y + Math.sin(a) * 22 * dt;
-    x.moveTo(p.x, p.y); x.lineTo(nx + Math.cos(a) * 2, ny + Math.sin(a) * 2);
-    p.x = nx; p.y = ny; p.l -= dt;
-    if (p.l < 0 || p.x < 0 || p.x > w || p.y < 0 || p.y > h) { p.x = rnd() * w; p.y = rnd() * h; p.l = rr(1, 4); }
-  }
-  x.stroke();
-}
-setInterval(() => { const b = document.querySelectorAll('#advBtns span'); const i = [...b].findIndex(s => s.classList.contains('on')); b[i].classList.remove('on'); b[(i + 1) % 3].classList.add('on'); }, 1400);
-
-function drawDiff() {
-  const x = cDiff.x, w = cDiff.w, h = cDiff.h;
-  x.clearRect(0, 0, w, h);
-  x.font = `600 7px ${FONT}`; x.textBaseline = 'top';
-  const gap = 8, mw = (w - gap) / 2, mh = h * 0.68, cols = 22, rows = 13, cw = mw / cols, ch = (mh - 10) / rows;
-  const hist = new Array(28).fill(0);
-  for (let m = 0; m < 2; m++) {
-    const ox = m * (mw + gap);
-    x.fillStyle = '#6b6f78'; x.fillText(m ? 'IMPLEMENTATION' : 'REFERENCE', ox, 0);
-    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      let v = 0.5 + 0.25 * Math.sin(i * 0.45 + T * 0.8) * Math.cos(j * 0.5 - T * 0.5) + 0.2 * Math.sin((i + j) * 0.3 + T);
-      let err = 0;
-      if (m) { const dx = i - 15 - Math.sin(T * 0.7) * 3, dy = j - 6; err = Math.exp(-(dx * dx + dy * dy) / 6) * (0.5 + 0.5 * Math.sin(T * 2)); v += err * 0.3; hist[Math.min(27, (err * 27) | 0)]++; }
-      const g = Math.max(0, Math.min(255, v * 210 + 20)) | 0;
-      x.fillStyle = err > 0.35 ? `rgba(240,166,198,${0.5 + err * 0.5})` : `rgb(${g},${g},${g + 4})`;
-      x.fillRect(ox + i * cw, 10 + j * ch, cw - 0.6, ch - 0.6);
-    }
-  }
-  const by = mh + 4, bh = h - by, bw = w / hist.length;
-  const mx = Math.max(...hist.slice(1), 1);
-  hist.forEach((v, i) => {
-    const hh = i === 0 ? bh * 0.9 : (v / mx) * bh * 0.8 + 1;
-    x.fillStyle = i > 9 ? '#f0a6c6' : '#8a8e97';
-    x.fillRect(i * bw, by + bh - hh, bw - 1, hh);
-  });
+function renderRunStatus() {
+  const el = document.getElementById('runStatus');
+  if (!el) return;
+  const r = PFDATA.runs;
+  const total = r.total;
+  const rows = [
+    ['succeeded', r.succeeded, '#5eead4'],
+    ['failed', r.failed, '#fb923c'],
+    ['cancelled', r.cancelled, '#8b8f98'],
+    ['running', r.running, '#a3e635'],
+    ['queued', r.queued, '#60a5fa']
+  ];
+  let bar = '<div class="stbar">';
+  rows.forEach(function (x) { bar += '<i style="width:' + (x[1] / total * 100).toFixed(2) + '%;background:' + x[2] + '"></i>'; });
+  bar += '</div>';
+  const list = rows.map(function (x) {
+    return '<div class="str"><i style="background:' + x[2] + '"></i>' +
+      '<span class="stk">' + x[0] + '</span>' +
+      '<span class="stn">' + fmtn2(x[1]) + '</span>' +
+      '<span class="stp">' + (x[1] / total * 100).toFixed(1) + '%</span></div>';
+  }).join('');
+  el.innerHTML = bar + list;
 }
 
-let valBuf = [[], [], []], valSpike = 0;
-function drawVal() {
-  const x = cVal.x, w = cVal.w, h = cVal.h;
-  x.clearRect(0, 0, w, h);
-  const lw = 58, n = Math.floor((w - lw) / 2), names = ['MASS', 'STABILITY', 'RESIDUAL'];
-  if (rnd() < 0.01) valSpike = 1;
-  valSpike *= 0.9;
-  const vals = [Math.sin(T * 3) * 0.35 + Math.sin(T * 7.3) * 0.15 + gauss() * 0.06,
-    Math.sin(T * 5 + 1) * 0.3 + Math.sin(T * 1.3) * 0.25 + gauss() * 0.08,
-    Math.sin(T * 2.2) * 0.2 + gauss() * 0.15 + (rnd() < 0.5 ? 1 : -1) * valSpike * 0.9];
-  vals.forEach((v, k) => { valBuf[k].push(v); while (valBuf[k].length > n) valBuf[k].shift(); });
-  x.font = `800 7px ${FONT}`; x.textBaseline = 'middle';
-  const rh = h / 3;
-  for (let k = 0; k < 3; k++) {
-    const yc = rh * k + rh / 2;
-    x.fillStyle = '#9a9ea7'; x.fillText(names[k], 0, yc);
-    x.strokeStyle = '#1f2227'; x.lineWidth = 1; x.beginPath(); x.moveTo(lw, yc); x.lineTo(w, yc); x.stroke();
-    x.strokeStyle = k === 1 && valSpike > 0.2 ? '#f0a6c6' : '#e6e8ec'; x.lineWidth = 1.1;
-    x.beginPath();
-    valBuf[k].forEach((v, i) => { const px = lw + i * 2, py = yc - v * rh * 0.45; i ? x.lineTo(px, py) : x.moveTo(px, py); });
-    x.stroke();
-  }
-  const cxr = lw + valBuf[0].length * 2;
-  x.strokeStyle = 'rgba(240,166,198,.6)'; x.beginPath(); x.moveTo(cxr, 0); x.lineTo(cxr, h); x.stroke();
-}
-
-const IDX = Array.from({ length: 11 }, () => Array.from({ length: 28 }, () => rnd()));
-function drawIdx() {
-  const x = cIdx.x, w = cIdx.w, h = cIdx.h;
-  x.clearRect(0, 0, w, h);
-  x.font = `600 6.5px ${FONT}`; x.textBaseline = 'middle';
-  const lx = 24, rx = 34, rows = 11, cols = 28, cw = (w - lx - rx) / cols, ch = h / rows;
-  const scan = Math.floor((T * 6) % cols);
-  if (rnd() < 0.3) { const r = (rnd() * rows) | 0, c = (rnd() * cols) | 0; IDX[r][c] = rnd(); }
-  for (let j = 0; j < rows; j++) {
-    x.fillStyle = '#6b6f78'; x.fillText('M' + String(j + 1).padStart(2, '0'), 0, j * ch + ch / 2);
-    let match = 0;
-    for (let i = 0; i < cols; i++) {
-      const v = IDX[j][i];
-      x.fillStyle = v > 0.86 ? '#f0a6c6' : v > 0.7 ? 'rgba(240,166,198,.45)' : v > 0.4 ? '#4a4e56' : '#1c1e23';
-      if (i === scan) x.fillStyle = v > 0.4 ? '#ffffff' : '#3a3e46';
-      x.fillRect(lx + i * cw, j * ch + 1, cw - 1, ch - 2);
-      if (v > 0.7) match++;
-    }
-    x.fillStyle = match > 7 ? '#f0a6c6' : '#9a9ea7';
-    x.fillText(match > 7 ? 'review' : 'match', w - rx + 4, j * ch + ch / 2);
-  }
-}
+renderFunnel();
+renderRunStatus();
 
 /* =========================================================
    LOOP
    ========================================================= */
-let last = performance.now();
+let last = performance.now(), T = 0;
 function frame(now) {
   const rawDt = Math.min(0.05, (now - last) / 1000); last = now;
-  // 悬停或拖拽时冻结整盘：dt 归零，节拍/运镜/旋转全部停住
-  // 冻结仅用于"悬停查看"：拖拽中、松手后（含惯性）都不冻结，保证转盘继续走
-  const frozenNow = IX.hover && !IX.dragging && IX.frozen <= 0 && Math.abs(IX.dragVel) < 0.02 && !IX.justReleased;
+  const frozenNow = ptr.lockedStage >= 0;
   const dt = frozenNow ? 0 : rawDt;
   T += rawDt;
-  if (!frozenNow) ixTick(rawDt); else ixTick(0);
+  if (!frozenNow) ixTick(rawDt);
   drawStage(dt);
-  // 面板动画在冻结时也停
-  const pdt = frozenNow ? 0 : rawDt;
-  drawAdv(pdt); drawDiff(); drawVal(); drawIdx(); agentsTick(pdt);
-  // 冻结时才做放大镜（内容取自冻结帧）
-  if (frozenNow) {
-    ixSnapshot();
-    drawLens();
-    drawPauseBadge();
-  }
+  drawLens();
+  drawPauseBadge();
   requestAnimationFrame(frame);
 }
 let rzT, ready = false, started = false;
 function resizeAll() {
   const r = stage.getBoundingClientRect();
   if (r.width < 20 || r.height < 20) { ready = false; return; }
-  DPR = Math.min(window.devicePixelRatio || 1, 2); resizeStage(); resizePanels(); ready = true;
+  DPR = Math.min(window.devicePixelRatio || 1, 2); resizeStage(); ready = true;
   if (!started) { started = true; last = performance.now(); requestAnimationFrame(frame); }
 }
 const origFrame = frame;
@@ -1797,7 +1815,7 @@ function applyRebuilds() {
   if (!ready) return;
   if (rebuildQ.has('resize')) { resizeAll(); rebuildQ.clear(); return; }
   if (rebuildQ.has('web')) buildWeb();
-  if (rebuildQ.has('slots')) slots.forEach(s => s.c = null);
+  if (rebuildQ.has('slots')) buildCards();
   if (rebuildQ.has('flyers')) initFlyers();
   rebuildQ.clear();
 }
